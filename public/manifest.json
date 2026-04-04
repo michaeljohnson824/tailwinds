@@ -1,0 +1,16 @@
+{
+  "name": "Tailwinds",
+  "short_name": "Tailwinds",
+  "description": "Flight logbook and cost tracking for pilots.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
