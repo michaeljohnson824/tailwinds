@@ -83,7 +83,9 @@ export default function SignupPage() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">Tailwinds</CardTitle>
+        <Link href="/" className="text-2xl font-bold hover:text-primary transition-colors">
+          Tailwinds
+        </Link>
         <CardDescription>Create your account</CardDescription>
       </CardHeader>
       <CardContent>
