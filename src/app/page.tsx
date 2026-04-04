@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Tailwinds — Know what your airplane actually costs",
+  title: "Tailwinds — Stay Current. Stay Sharp.",
   description:
-    "The ownership companion for GA aircraft owners. Flight logbook, cost tracking, maintenance management, and partnership billing — all in one app.",
+    "The modern flight logbook for pilots. Log flights in seconds, track currency, know your costs, and stay organized — all in one place.",
 };
 
 export default function LandingPage() {
@@ -34,16 +34,16 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-4 py-20 text-center sm:py-28">
         <p className="mb-3 text-sm font-medium text-primary">
-          ForeFlight flies the plane. Tailwinds owns the plane.
+          The modern logbook for modern pilots
         </p>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-          Know what your airplane
+          Stay current.
           <br />
-          <span className="text-primary">actually costs</span>
+          <span className="text-primary">Stay sharp.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
-          The modern flight logbook for pilots.
-          Log flights in seconds, track currency, and stay organized — all in one place.
+          Log flights in seconds, always know your currency status, and
+          track what flying actually costs — all in one place.
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Link
@@ -65,24 +65,24 @@ export default function LandingPage() {
       <section className="border-t border-border/50 bg-card/30">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:py-20">
           <h2 className="mb-10 text-center text-2xl font-bold sm:text-3xl">
-            Everything a pilot needs
+            Everything a pilot needs in one place
           </h2>
           <div className="grid gap-6 sm:grid-cols-3">
             <FeatureCard
               icon={<BookIcon />}
-              title="Flight Logbook"
-              description="Log flights in under 30 seconds. Auto-fill Hobbs and tach, track currency, and export to CSV anytime."
+              title="Fast Logbook"
+              description="Log a flight in under 30 seconds. Auto-fill Hobbs and tach, track night and IFR currency at a glance, and export anytime."
             />
             <FeatureCard
               icon={<ChartIcon />}
-              title="Cost Tracking"
-              description="See your true fully-loaded cost per hour. Track fuel, maintenance, hangar, insurance — every dollar."
+              title="Know Your Costs"
+              description="See where every dollar goes. Track fuel, maintenance, insurance, and hangar fees — and know what each hour really costs you."
               badge="Coming Soon"
             />
             <FeatureCard
               icon={<UsersIcon />}
-              title="Partnerships"
-              description="Split costs transparently with co-owners. Usage-based billing, shared squawk board, and settlement reports."
+              title="Split It Fairly"
+              description="Co-own a plane? Split fixed and variable costs by usage, settle up monthly, and keep a shared squawk board."
               badge="Coming Soon"
             />
           </div>
@@ -115,7 +115,7 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="border-t border-border/50 bg-card/30">
         <div className="mx-auto max-w-5xl px-4 py-16 text-center">
-          <h2 className="text-2xl font-bold">Ready to know your real cost per hour?</h2>
+          <h2 className="text-2xl font-bold">Your logbook should work as hard as you do.</h2>
           <p className="mt-2 text-muted-foreground">
             Free forever for flight logging. No credit card required.
           </p>
