@@ -37,9 +37,9 @@ export default function LandingPage() {
           The modern logbook for modern pilots
         </p>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-          Stay current.
+          Stay current. Stay sharp.
           <br />
-          <span className="text-primary">Stay sharp.</span>
+          <span className="text-primary">Stay ahead.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
           Log flights in seconds, always know your currency status, and
