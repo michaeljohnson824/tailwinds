@@ -101,8 +101,8 @@ export default function LandingPage() {
               <p className="text-xs text-muted-foreground">Unlimited flights</p>
             </div>
             <div>
-              <p className="text-3xl font-bold">&lt;30s</p>
-              <p className="text-xs text-muted-foreground">Per flight entry</p>
+              <p className="text-3xl font-bold">Seamless Entry</p>
+              <p className="text-xs text-muted-foreground">Auto-fills from your last flight</p>
             </div>
             <div>
               <p className="text-3xl font-bold">Any Device</p>
