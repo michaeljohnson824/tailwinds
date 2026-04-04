@@ -42,8 +42,8 @@ export default function LandingPage() {
           <span className="text-primary">actually costs</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
-          The flight logbook and ownership companion for GA aircraft owners.
-          Log flights in seconds, track every dollar, and stay current — all in one place.
+          The modern flight logbook for pilots.
+          Log flights in seconds, track currency, and stay organized — all in one place.
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Link
@@ -65,7 +65,7 @@ export default function LandingPage() {
       <section className="border-t border-border/50 bg-card/30">
         <div className="mx-auto max-w-5xl px-4 py-16 sm:py-20">
           <h2 className="mb-10 text-center text-2xl font-bold sm:text-3xl">
-            Everything an aircraft owner needs
+            Everything a pilot needs
           </h2>
           <div className="grid gap-6 sm:grid-cols-3">
             <FeatureCard
@@ -93,7 +93,7 @@ export default function LandingPage() {
       <section className="border-t border-border/50">
         <div className="mx-auto max-w-5xl px-4 py-16 text-center">
           <p className="text-muted-foreground">
-            Built by a 182 owner who was tired of spreadsheets.
+            Built by a pilot who was tired of spreadsheets.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-8">
             <div>
@@ -105,8 +105,8 @@ export default function LandingPage() {
               <p className="text-xs text-muted-foreground">Per flight entry</p>
             </div>
             <div>
-              <p className="text-3xl font-bold">PWA</p>
-              <p className="text-xs text-muted-foreground">Works on any device</p>
+              <p className="text-3xl font-bold">Any Device</p>
+              <p className="text-xs text-muted-foreground">Phone, tablet, or desktop</p>
             </div>
           </div>
         </div>
