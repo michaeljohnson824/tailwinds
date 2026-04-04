@@ -58,9 +58,7 @@ export default function LoginPage() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <Link href="/" className="text-2xl font-bold hover:text-primary transition-colors">
-          Tailwinds
-        </Link>
+        <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
         <CardDescription>Sign in to your account</CardDescription>
       </CardHeader>
       <CardContent>

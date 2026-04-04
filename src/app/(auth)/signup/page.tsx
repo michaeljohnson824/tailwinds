@@ -83,10 +83,8 @@ export default function SignupPage() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <Link href="/" className="text-2xl font-bold hover:text-primary transition-colors">
-          Tailwinds
-        </Link>
-        <CardDescription>Create your account</CardDescription>
+        <CardTitle className="text-2xl font-bold">Create account</CardTitle>
+        <CardDescription>Get started with Tailwinds</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSignup} className="grid gap-4">
