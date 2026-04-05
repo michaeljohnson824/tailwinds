@@ -58,7 +58,7 @@ export async function createCheckoutMonthly(): Promise<void> {
 }
 
 export async function createCheckoutYearly(): Promise<void> {
-  await createCheckoutSession(PRICES.PILOT_YEARLY);
+  await createCheckoutSession(PRICES.PILOT_ANNUAL);
 }
 
 export async function createPortalSession(): Promise<void> {
