@@ -19,6 +19,11 @@ export const profiles = pgTable("profiles", {
   medicalExpiration: date("medical_expiration"),
   flightReviewDate: date("flight_review_date"),
   subscriptionTier: text("subscription_tier").notNull().default("free"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripePriceId: text("stripe_price_id"),
+  stripeCurrentPeriodEnd: timestamp("stripe_current_period_end"),
+  subscriptionStatus: text("subscription_status"),
   preferences: jsonb("preferences").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -71,6 +76,60 @@ export const flights = pgTable("flights", {
   fuelPricePerGallon: decimal("fuel_price_per_gallon", { precision: 10, scale: 2 }),
   fuelTotalCost: decimal("fuel_total_cost", { precision: 10, scale: 2 }),
   remarks: text("remarks"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const engines = pgTable("engines", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  aircraftId: uuid("aircraft_id")
+    .references(() => aircraft.id)
+    .notNull(),
+  position: text("position").notNull().default("single"),
+  makeModel: text("make_model"),
+  serialNumber: text("serial_number"),
+  tboHours: integer("tbo_hours"),
+  tsmoh: decimal("tsmoh", { precision: 10, scale: 1 }),
+  overhaulCostEstimate: decimal("overhaul_cost_estimate", { precision: 10, scale: 2 }),
+  lastOilChangeTach: decimal("last_oil_change_tach", { precision: 10, scale: 1 }),
+  oilChangeIntervalHours: integer("oil_change_interval_hours"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const expenses = pgTable("expenses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  aircraftId: uuid("aircraft_id")
+    .references(() => aircraft.id)
+    .notNull(),
+  recordedBy: uuid("recorded_by")
+    .references(() => profiles.id)
+    .notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  date: date("date").notNull(),
+  isRecurring: boolean("is_recurring").default(false).notNull(),
+  recurrenceInterval: text("recurrence_interval"),
+  receiptUrl: text("receipt_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const costProfiles = pgTable("cost_profiles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  aircraftId: uuid("aircraft_id")
+    .references(() => aircraft.id)
+    .notNull(),
+  ownerId: uuid("owner_id")
+    .references(() => profiles.id)
+    .notNull(),
+  hangarMonthly: decimal("hangar_monthly", { precision: 10, scale: 2 }).default("0"),
+  insuranceMonthly: decimal("insurance_monthly", { precision: 10, scale: 2 }).default("0"),
+  annualEstimate: decimal("annual_estimate", { precision: 10, scale: 2 }).default("0"),
+  loanMonthly: decimal("loan_monthly", { precision: 10, scale: 2 }).default("0"),
+  subscriptionsMonthly: decimal("subscriptions_monthly", { precision: 10, scale: 2 }).default("0"),
+  engineReservePerHour: decimal("engine_reserve_per_hour", { precision: 10, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

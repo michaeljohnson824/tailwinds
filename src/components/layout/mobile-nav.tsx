@@ -11,6 +11,8 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/logbook", label: "Logbook" },
   { href: "/dashboard/aircraft", label: "Aircraft" },
+  { href: "/dashboard/expenses", label: "Expenses" },
+  { href: "/dashboard/costs", label: "Costs" },
   { href: "/dashboard/settings", label: "Settings" },
 ];
 

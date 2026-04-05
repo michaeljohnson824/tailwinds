@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { updateProfile } from "@/lib/actions/profile";
 import { signOut } from "@/lib/actions/auth";
+import { createPortalSession } from "@/lib/actions/stripe";
 
 type ProfileData = {
   display_name: string | null;
@@ -19,9 +21,13 @@ type ProfileData = {
 export function SettingsForm({
   profile,
   email,
+  subscriptionTier,
+  isPaid,
 }: {
   profile: ProfileData;
   email: string;
+  subscriptionTier: string;
+  isPaid: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateProfile, {
     error: null,
@@ -123,6 +129,33 @@ export function SettingsForm({
           >
             Import CSV
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Subscription */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Subscription
+            <Badge variant={isPaid ? "default" : "secondary"}>
+              {subscriptionTier === "free"
+                ? "Free"
+                : subscriptionTier.charAt(0).toUpperCase() +
+                  subscriptionTier.slice(1)}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isPaid ? (
+            <form action={createPortalSession}>
+              <Button variant="outline">Manage Subscription</Button>
+            </form>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Upgrade to Pilot to unlock cost tracking, expense management, and
+              engine monitoring.
+            </p>
+          )}
         </CardContent>
       </Card>
 

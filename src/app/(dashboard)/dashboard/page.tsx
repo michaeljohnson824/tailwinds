@@ -3,10 +3,14 @@ import Link from "next/link";
 import { getUserAircraft } from "@/lib/queries/aircraft";
 import { getCurrencyStatus } from "@/lib/queries/currencies";
 import { getFlightStats, getRecentFlights } from "@/lib/queries/stats";
+import { getCostProfile } from "@/lib/queries/cost-profiles";
+import { getTrailing12MonthExpenses, getMonthlyFlightHours } from "@/lib/queries/expenses";
+import { calculateCostPerHour } from "@/lib/utils/costs";
 import { Button } from "@/components/ui/button";
 import { CurrencyGrid } from "@/components/dashboard/currency-grid";
 import { QuickStats } from "@/components/dashboard/quick-stats";
 import { RecentFlights } from "@/components/dashboard/recent-flights";
+import { CostTeaser } from "@/components/dashboard/cost-teaser";
 
 export const metadata: Metadata = { title: "Dashboard — Tailwinds" };
 
@@ -33,11 +37,30 @@ export default async function DashboardPage() {
     );
   }
 
-  const [currencies, stats, recentFlights] = await Promise.all([
-    getCurrencyStatus(),
-    getFlightStats(),
-    getRecentFlights(5),
-  ]);
+  const primaryAircraft = aircraft[0];
+  const aircraftId = primaryAircraft?.id;
+
+  const [currencies, stats, recentFlights, costProfile, expenses, flights] =
+    await Promise.all([
+      getCurrencyStatus(),
+      getFlightStats(),
+      getRecentFlights(5),
+      aircraftId ? getCostProfile(aircraftId) : Promise.resolve(null),
+      getTrailing12MonthExpenses(aircraftId),
+      getMonthlyFlightHours(aircraftId),
+    ]);
+
+  // Determine cost teaser state
+  const costData = calculateCostPerHour(costProfile, expenses, flights);
+  const hasFuelData = expenses.some((e) => e.category === "fuel");
+  const hasCostProfile = !!costProfile;
+
+  let teaserState: "full" | "fuel-only" | "none" = "none";
+  if (hasCostProfile && costData.totalHours > 0) {
+    teaserState = "full";
+  } else if (hasFuelData && costData.totalHours > 0) {
+    teaserState = "fuel-only";
+  }
 
   return (
     <div className="space-y-6">
@@ -62,6 +85,14 @@ export default async function DashboardPage() {
 
       {/* Quick Stats */}
       <QuickStats stats={stats} />
+
+      {/* Cost Per Hour Teaser */}
+      <CostTeaser
+        state={teaserState}
+        costPerHour={costData.totalCostPerHour}
+        fuelPerHour={costData.fuelPerHour}
+        aircraftId={aircraftId}
+      />
 
       {/* Recent Flights */}
       <RecentFlights flights={recentFlights} />

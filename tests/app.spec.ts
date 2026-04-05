@@ -35,8 +35,20 @@ test.describe.serial("Tailwinds E2E", () => {
   });
 
   test.afterAll(async () => {
-    // Clean up: delete flights, aircraft, profile, then auth user
+    // Clean up: delete all user data then auth user
     if (testUserId) {
+      // Get aircraft IDs for FK cleanup
+      const { data: aircraftRows } = await supabase
+        .from("aircraft")
+        .select("id")
+        .eq("owner_id", testUserId);
+      const aircraftIds = (aircraftRows ?? []).map((a) => a.id);
+
+      if (aircraftIds.length > 0) {
+        await supabase.from("engines").delete().in("aircraft_id", aircraftIds);
+        await supabase.from("cost_profiles").delete().in("aircraft_id", aircraftIds);
+        await supabase.from("expenses").delete().in("aircraft_id", aircraftIds);
+      }
       await supabase.from("flights").delete().eq("pilot_id", testUserId);
       await supabase.from("aircraft").delete().eq("owner_id", testUserId);
       await supabase.from("profiles").delete().eq("id", testUserId);
@@ -201,5 +213,229 @@ test.describe.serial("Tailwinds E2E", () => {
 
     // Cancel button should be visible
     await expect(page.getByText("Cancel")).toBeVisible();
+  });
+
+  // ============================================================
+  // Layer 2 Tests
+  // ============================================================
+
+  test("11. Add engine to aircraft and verify status displays", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/dashboard/aircraft");
+    await page.getByText("N-TEST1").click();
+    await page.waitForURL("**/dashboard/aircraft/**");
+
+    // Free user sees teaser for engine section — upgrade link
+    // For testing, set user to pilot tier so we can test engine features
+    await supabase
+      .from("profiles")
+      .update({ subscription_tier: "pilot" })
+      .eq("id", testUserId);
+
+    // Reload to pick up tier change
+    await page.reload();
+
+    // Should see "Set Up Engine" button
+    await expect(page.getByRole("button", { name: "Set Up Engine" })).toBeVisible({ timeout: 5000 });
+    await page.getByRole("button", { name: "Set Up Engine" }).click();
+
+    // Fill engine form
+    await page.getByLabel("Engine Make / Model").fill("Lycoming IO-360-L2A");
+    await page.getByLabel("TBO (hours)").fill("2000");
+    await page.getByLabel("TSMOH (hours)").fill("500");
+    await page.getByLabel("Estimated Overhaul Cost ($)").fill("40000");
+    await page.getByLabel("Last Oil Change (tach)").fill("945.0");
+    await page.getByLabel("Oil Change Interval (hrs)").fill("50");
+
+    await page.getByRole("button", { name: "Save Engine" }).click();
+
+    // Wait for page to refresh and show engine status
+    await expect(page.getByText("Lycoming IO-360-L2A")).toBeVisible({ timeout: 10000 });
+
+    // Engine status should display TBO progress
+    await expect(page.getByText("Time to Overhaul")).toBeVisible();
+    await expect(page.getByText("1500.0 hrs remaining")).toBeVisible();
+
+    // Oil change status
+    await expect(page.getByText("Oil Change", { exact: true })).toBeVisible();
+
+    // Reserve rate: $40000 / 2000 = $20.00/hr
+    await expect(page.getByText("$20.00/hr").first()).toBeVisible();
+  });
+
+  test("12. Set up cost profile with correct totals", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/dashboard/aircraft");
+    await page.getByText("N-TEST1").click();
+    await page.waitForURL("**/dashboard/aircraft/**");
+
+    // Click "Set Up Cost Tracking"
+    await expect(page.getByText("Set Up Cost Tracking")).toBeVisible({ timeout: 5000 });
+    await page.getByText("Set Up Cost Tracking").click();
+    await page.waitForURL("**/costs");
+
+    // Step 1: Fixed costs
+    await expect(page.getByText("Step 1: Fixed Costs")).toBeVisible();
+
+    await page.getByLabel("Monthly Hangar / Tiedown").fill("400");
+    await page.getByLabel("Annual Insurance").fill("2400");
+    await page.getByLabel("Annual Inspection Estimate").fill("1200");
+    await page.getByLabel("Monthly Loan / Financing").fill("300");
+    await page.getByLabel("Monthly Subscriptions").fill("50");
+
+    // Verify monthly total: 400 + 2400/12 + 1200/12 + 300 + 50 = 400+200+100+300+50 = 1050
+    await expect(page.getByText("$1050/mo")).toBeVisible();
+
+    // Verify annual total: 1050 * 12 = 12600
+    await expect(page.getByText("$12600/yr")).toBeVisible();
+
+    // Continue to step 2
+    await page.getByRole("button", { name: "Continue" }).click();
+
+    // Step 2: Confirmation
+    await expect(page.getByText("Step 2: Confirm")).toBeVisible();
+    await expect(page.getByText("$12600/yr")).toBeVisible();
+
+    // Save
+    await page.getByRole("button", { name: "Save Cost Profile" }).click();
+    // Should redirect back to aircraft detail
+    await page.waitForURL("**/dashboard/aircraft/**", { timeout: 10000 });
+
+    // Should now show "Edit Cost Profile" instead of "Set Up"
+    await expect(page.getByText("Edit Cost Profile")).toBeVisible();
+    await expect(page.getByText("$1050/mo in fixed costs")).toBeVisible();
+  });
+
+  test("13. Add expense manually and verify it appears", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/dashboard/expenses");
+
+    await expect(page.getByRole("heading", { name: "Expenses" })).toBeVisible();
+
+    // Click Add Expense
+    await page.getByRole("button", { name: "Add Expense" }).click();
+
+    // Fill expense form
+    // Aircraft should be pre-selected (only one)
+    await page.locator("select[name='category']").selectOption("maintenance");
+    await page.getByLabel("Amount ($)").fill("250");
+    await page.getByLabel("Description").fill("Oil change and filter");
+
+    await page.getByRole("button", { name: "Add Expense" }).click();
+
+    // Expense should appear in the list
+    await expect(page.getByText("Oil change and filter")).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("span").filter({ hasText: "$250.00" })).toBeVisible();
+    // Category badge should show in the expense row (not in form select)
+    await expect(page.locator("span").filter({ hasText: "Maintenance" }).first()).toBeVisible();
+  });
+
+  test("14. Log flight with fuel data and verify auto fuel expense", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/dashboard/logbook/new");
+
+    // Fill flight form
+    await page.locator("#routeFrom").fill("KSBA");
+    await page.locator("#routeTo").fill("KSNA");
+    await page.locator("#hobbsEnd").fill("1002.5");
+    await page.locator("#tachEnd").fill("952.2");
+
+    // Expand Fuel section and fill
+    await page.getByText("Fuel").click();
+    await page.getByLabel("Gallons").fill("12.5");
+    await page.getByLabel("Price/gal ($)").fill("6.50");
+
+    await page.getByRole("button", { name: "Log Flight" }).click();
+    await page.waitForURL("**/dashboard/logbook", { timeout: 10000 });
+
+    // Now check expenses — a fuel expense should have been auto-created
+    await page.goto("/dashboard/expenses");
+    await expect(page.getByText(/Fuel — KSBA to KSNA/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("$81.25")).toBeVisible(); // 12.5 * 6.50
+  });
+
+  test("15. Cost dashboard shows cost per hour and breakdown cards", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/dashboard/costs");
+
+    // Should see the big cost per hour number (not the paywall since user is pilot tier)
+    await expect(page.getByText("Your Cost Per Hour")).toBeVisible({ timeout: 10000 });
+
+    // The number should be a dollar amount — at least check for the $ sign
+    await expect(page.locator("text=/\\$\\d+\\.\\d{2}/").first()).toBeVisible();
+
+    // Breakdown cards should be visible
+    await expect(page.getByText("Fixed Costs").first()).toBeVisible();
+    await expect(page.getByText("Fuel").first()).toBeVisible();
+    await expect(page.getByText("Maintenance").first()).toBeVisible();
+    await expect(page.getByText("Engine Reserve")).toBeVisible();
+
+    // Each card should show a /hr value
+    const perHrLabels = page.locator("text=/\\/hr/");
+    await expect(perHrLabels.first()).toBeVisible();
+  });
+
+  test("16. Cost dashboard charts render without errors", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/dashboard/costs");
+
+    // Wait for page to load
+    await expect(page.getByText("Your Cost Per Hour")).toBeVisible({ timeout: 10000 });
+
+    // Trend chart section should render
+    await expect(page.getByText("Cost Per Hour — Trailing 12 Months")).toBeVisible();
+
+    // Recharts renders SVG elements inside responsive containers
+    const chartSvg = page.locator(".recharts-wrapper").first();
+    await expect(chartSvg).toBeVisible({ timeout: 10000 });
+
+    // Pie chart section
+    await expect(page.getByText("Cost Breakdown by Category")).toBeVisible();
+
+    // Utilization insight
+    await expect(page.getByText("Utilization Insight")).toBeVisible();
+    await expect(page.getByText(/You flew .+ hours/)).toBeVisible();
+
+    // Expense summary table
+    await expect(page.getByText("Expense Summary")).toBeVisible();
+  });
+
+  test("17. Free user sees paywall on /dashboard/costs", async ({ page }) => {
+    // Reset user to free tier
+    await supabase
+      .from("profiles")
+      .update({ subscription_tier: "free" })
+      .eq("id", testUserId);
+
+    await signIn(page);
+    await page.goto("/dashboard/costs");
+
+    // Should see paywall modal, not the dashboard
+    await expect(page.getByText("Unlock Cost Tracking")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("$9")).toBeVisible();
+    await expect(page.getByText("$89")).toBeVisible();
+    await expect(page.getByText("save 18%")).toBeVisible();
+
+    // Should NOT see the cost per hour number
+    await expect(page.getByText("Your Cost Per Hour")).not.toBeVisible();
+
+    // Restore pilot tier for subsequent tests
+    await supabase
+      .from("profiles")
+      .update({ subscription_tier: "pilot" })
+      .eq("id", testUserId);
+  });
+
+  test("18. Dashboard teaser card renders with flight data", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/dashboard");
+
+    // With cost profile and flight data, should show cost per hour teaser
+    // Should see either a dollar cost/hr value or "Cost Per Hour" text
+    await expect(page.getByText("Cost Per Hour")).toBeVisible({ timeout: 10000 });
+
+    // The teaser card links to the costs dashboard (scope to main content, not sidebar)
+    const teaserLink = page.locator("main a[href='/dashboard/costs']");
+    await expect(teaserLink).toBeVisible();
   });
 });

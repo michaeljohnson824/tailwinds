@@ -92,6 +92,21 @@ export async function createFlight(
 
   if (error) return { error: error.message };
 
+  // Auto-create fuel expense if fuel data was provided
+  if (fuelTotalCost && d.fuelGallons && d.fuelPricePerGallon) {
+    const from = d.routeFrom || "???";
+    const to = d.routeTo || "???";
+    const desc = `Fuel — ${from} to ${to}, ${d.fuelGallons.toFixed(1)} gal @ $${d.fuelPricePerGallon.toFixed(2)}`;
+    await supabase.from("expenses").insert({
+      aircraft_id: d.aircraftId,
+      recorded_by: user.id,
+      category: "fuel",
+      amount: fuelTotalCost,
+      date: d.date,
+      description: desc,
+    });
+  }
+
   // Update aircraft hobbs and tach to end values
   const updates: Record<string, unknown> = {
     hobbs_current: d.hobbsEnd,
@@ -109,6 +124,8 @@ export async function createFlight(
 
   revalidatePath("/dashboard/logbook");
   revalidatePath("/dashboard/aircraft");
+  revalidatePath("/dashboard/expenses");
+  revalidatePath("/dashboard/costs");
   revalidatePath("/dashboard");
   redirect("/dashboard/logbook");
 }

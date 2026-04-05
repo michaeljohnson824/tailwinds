@@ -1,11 +1,19 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getAircraft } from "@/lib/queries/aircraft";
+import { getEngineByAircraft } from "@/lib/queries/engines";
+import { getCostProfile } from "@/lib/queries/cost-profiles";
+import { getProfile } from "@/lib/queries/profile";
+import { isPaidUser } from "@/lib/utils/subscription";
 import { deleteAircraft } from "@/lib/actions/aircraft";
+import { createEngine, updateEngine } from "@/lib/actions/engines";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { EngineStatus } from "@/components/aircraft/engine-status";
+import { EngineSection } from "@/components/aircraft/engine-section";
+import { PaidFeatureTeaser } from "@/components/paywall/paid-feature-teaser";
 
 export default async function AircraftDetailPage({
   params,
@@ -13,14 +21,35 @@ export default async function AircraftDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const aircraft = await getAircraft(id);
+  const [aircraft, engine, costProfile, profile] = await Promise.all([
+    getAircraft(id),
+    getEngineByAircraft(id),
+    getCostProfile(id),
+    getProfile(),
+  ]);
+  const paid = isPaidUser(profile);
 
   if (!aircraft) notFound();
+
+  // Calculate hours flown since engine was set up
+  // We use tach hours flown since the engine's TSMOH baseline was recorded
+  const hoursFlownSinceSetup = engine
+    ? await getHoursFlownSinceEngineSetup(id, engine.created_at)
+    : 0;
+
+  const currentTach = aircraft.tach_current != null
+    ? Number(aircraft.tach_current)
+    : null;
 
   async function handleDelete() {
     "use server";
     await deleteAircraft(id);
   }
+
+  const createEngineAction = createEngine.bind(null, id);
+  const updateEngineAction = engine
+    ? updateEngine.bind(null, engine.id, id)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -74,6 +103,59 @@ export default async function AircraftDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* Engine Section — Pilot tier */}
+      {paid ? (
+        <>
+          {engine ? (
+            <EngineStatus
+              engine={engine}
+              currentTach={currentTach}
+              hoursFlownSinceSetup={hoursFlownSinceSetup}
+            />
+          ) : null}
+          <EngineSection
+            engine={engine}
+            createAction={createEngineAction}
+            updateAction={updateEngineAction}
+          />
+        </>
+      ) : (
+        <PaidFeatureTeaser
+          title="Engine Tracking"
+          description="Track TBO countdown, oil changes, and engine reserve rate."
+        />
+      )}
+
+      {/* Cost Profile Link — Pilot tier */}
+      {paid ? (
+        <Card>
+          <CardContent className="flex items-center justify-between py-4">
+            <div>
+              <p className="text-sm font-medium">
+                {costProfile ? "Cost Profile" : "Cost Tracking"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {costProfile
+                  ? `$${totalMonthly(costProfile).toFixed(0)}/mo in fixed costs`
+                  : "Set up fixed costs to see your true cost per hour"}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              render={<Link href={`/dashboard/aircraft/${id}/costs`} />}
+              nativeButton={false}
+            >
+              {costProfile ? "Edit Cost Profile" : "Set Up Cost Tracking"}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <PaidFeatureTeaser
+          title="Cost Tracking"
+          description="See your true cost per hour with fixed cost amortization."
+        />
+      )}
     </div>
   );
 }
@@ -84,5 +166,40 @@ function InfoItem({ label, value }: { label: string; value: string }) {
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-sm font-medium">{value}</p>
     </div>
+  );
+}
+
+function totalMonthly(cp: {
+  hangar_monthly: string | number | null;
+  insurance_monthly: string | number | null;
+  annual_estimate: string | number | null;
+  loan_monthly: string | number | null;
+  subscriptions_monthly: string | number | null;
+}): number {
+  return (
+    Number(cp.hangar_monthly ?? 0) +
+    Number(cp.insurance_monthly ?? 0) +
+    Number(cp.annual_estimate ?? 0) +
+    Number(cp.loan_monthly ?? 0) +
+    Number(cp.subscriptions_monthly ?? 0)
+  );
+}
+
+async function getHoursFlownSinceEngineSetup(
+  aircraftId: string,
+  engineCreatedAt: string,
+): Promise<number> {
+  const { createClient } = await import("@/lib/supabase/server");
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("flights")
+    .select("total_time")
+    .eq("aircraft_id", aircraftId)
+    .gte("created_at", engineCreatedAt);
+
+  return (data ?? []).reduce(
+    (sum, f) => sum + (f.total_time ? Number(f.total_time) : 0),
+    0,
   );
 }
