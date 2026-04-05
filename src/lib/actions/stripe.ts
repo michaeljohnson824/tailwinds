@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { stripe, PRICES } from "@/lib/stripe/config";
+import { getStripe, PRICES } from "@/lib/stripe/config";
 
 export async function createCheckoutSession(priceId: string) {
   const supabase = await createClient();
@@ -21,7 +21,7 @@ export async function createCheckoutSession(priceId: string) {
   let customerId = profile?.stripe_customer_id;
 
   if (!customerId) {
-    const customer = await stripe.customers.create({
+    const customer = await getStripe().customers.create({
       email: user.email!,
       metadata: { supabase_user_id: user.id },
     });
@@ -35,7 +35,7 @@ export async function createCheckoutSession(priceId: string) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
@@ -80,7 +80,7 @@ export async function createPortalSession(): Promise<void> {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  const session = await stripe.billingPortal.sessions.create({
+  const session = await getStripe().billingPortal.sessions.create({
     customer: profile.stripe_customer_id,
     return_url: `${appUrl}/dashboard/settings`,
   });
