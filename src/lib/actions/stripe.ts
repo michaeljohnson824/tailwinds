@@ -33,7 +33,9 @@ export async function createCheckoutSession(priceId: string) {
       .eq("id", user.id);
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   const session = await getStripe().checkout.sessions.create({
     customer: customerId,
@@ -52,13 +54,11 @@ export async function createCheckoutSession(priceId: string) {
 }
 
 export async function createCheckoutMonthly(): Promise<void> {
-  const result = await createCheckoutSession(PRICES.PILOT_MONTHLY);
-  if (result?.error) throw new Error(result.error);
+  await createCheckoutSession(PRICES.PILOT_MONTHLY);
 }
 
 export async function createCheckoutYearly(): Promise<void> {
-  const result = await createCheckoutSession(PRICES.PILOT_YEARLY);
-  if (result?.error) throw new Error(result.error);
+  await createCheckoutSession(PRICES.PILOT_YEARLY);
 }
 
 export async function createPortalSession(): Promise<void> {
@@ -78,7 +78,9 @@ export async function createPortalSession(): Promise<void> {
     throw new Error("No subscription found");
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
   const session = await getStripe().billingPortal.sessions.create({
     customer: profile.stripe_customer_id,
