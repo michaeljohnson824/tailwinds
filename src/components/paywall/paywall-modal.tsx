@@ -1,23 +1,19 @@
 "use client";
 
-import { useTransition } from "react";
+import { useActionState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createCheckoutMonthly, createCheckoutYearly } from "@/lib/actions/stripe";
 
 export function PaywallModal() {
-  const [pending, startTransition] = useTransition();
-
-  function handleMonthly() {
-    startTransition(async () => {
-      await createCheckoutMonthly();
-    });
-  }
-
-  function handleYearly() {
-    startTransition(async () => {
-      await createCheckoutYearly();
-    });
-  }
+  const [monthlyState, monthlyAction, monthlyPending] = useActionState(
+    async () => { await createCheckoutMonthly(); },
+    undefined,
+  );
+  const [yearlyState, yearlyAction, yearlyPending] = useActionState(
+    async () => { await createCheckoutYearly(); },
+    undefined,
+  );
+  const pending = monthlyPending || yearlyPending;
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -41,24 +37,26 @@ export function PaywallModal() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleMonthly}
-              disabled={pending}
-              className="w-full rounded-lg border border-border bg-background py-3 flex flex-col items-center transition-colors hover:bg-muted disabled:opacity-50"
-            >
-              <span className="text-lg font-bold">$9</span>
-              <span className="text-xs text-muted-foreground">/month</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleYearly}
-              disabled={pending}
-              className="w-full rounded-lg bg-primary py-3 flex flex-col items-center transition-colors hover:bg-primary/90 disabled:opacity-50"
-            >
-              <span className="text-lg font-bold text-primary-foreground">$89</span>
-              <span className="text-xs text-primary-foreground/70">/year (save 18%)</span>
-            </button>
+            <form action={monthlyAction}>
+              <button
+                type="submit"
+                disabled={pending}
+                className="w-full rounded-lg border border-border bg-background py-3 flex flex-col items-center transition-colors hover:bg-muted disabled:opacity-50"
+              >
+                <span className="text-lg font-bold">$9</span>
+                <span className="text-xs text-muted-foreground">/month</span>
+              </button>
+            </form>
+            <form action={yearlyAction}>
+              <button
+                type="submit"
+                disabled={pending}
+                className="w-full rounded-lg bg-primary py-3 flex flex-col items-center transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                <span className="text-lg font-bold text-primary-foreground">$89</span>
+                <span className="text-xs text-primary-foreground/70">/year (save 18%)</span>
+              </button>
+            </form>
           </div>
 
           {pending && (
