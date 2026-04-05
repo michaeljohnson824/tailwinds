@@ -12,7 +12,8 @@ export function getStripe(): Stripe {
 }
 
 // Price IDs from your Stripe dashboard (test mode)
+// Supports both naming conventions
 export const PRICES = {
-  PILOT_MONTHLY: process.env.STRIPE_PRICE_PILOT_MONTHLY ?? "",
-  PILOT_YEARLY: process.env.STRIPE_PRICE_PILOT_YEARLY ?? "",
+  PILOT_MONTHLY: process.env.STRIPE_PRICE_PILOT_MONTHLY ?? process.env.STRIPE_PILOT_MONTHLY_PRICE_ID ?? "",
+  PILOT_YEARLY: process.env.STRIPE_PRICE_PILOT_YEARLY ?? process.env.STRIPE_PILOT_ANNUAL_PRICE_ID ?? "",
 } as const;
