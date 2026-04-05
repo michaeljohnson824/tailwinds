@@ -28,15 +28,15 @@ export function PaywallModal() {
 
           <div className="grid grid-cols-2 gap-3 pt-2">
             <form action={createCheckoutMonthly}>
-              <Button variant="outline" className="w-full h-auto py-3 flex flex-col">
+              <Button type="submit" variant="outline" className="w-full h-auto py-3 flex flex-col">
                 <span className="text-lg font-bold">$9</span>
                 <span className="text-xs text-muted-foreground">/month</span>
               </Button>
             </form>
             <form action={createCheckoutYearly}>
-              <Button className="w-full h-auto py-3 flex flex-col">
-                <span className="text-lg font-bold">$89</span>
-                <span className="text-xs text-muted-foreground">/year (save 18%)</span>
+              <Button type="submit" className="w-full h-auto py-3 flex flex-col">
+                <span className="text-lg font-bold text-primary-foreground">$89</span>
+                <span className="text-xs text-primary-foreground/70">/year (save 18%)</span>
               </Button>
             </form>
           </div>
