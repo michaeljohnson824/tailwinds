@@ -1,20 +1,28 @@
 "use client";
 
-import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createCheckoutMonthly, createCheckoutYearly } from "@/lib/actions/stripe";
 
-export function PaywallModal() {
-  const [monthlyState, monthlyAction, monthlyPending] = useActionState(
-    async () => { await createCheckoutMonthly(); },
-    undefined,
+function SubmitButton({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" disabled={pending} className={className}>
+      {children}
+      {pending && (
+        <span className="text-[10px] mt-0.5 opacity-70">Redirecting...</span>
+      )}
+    </button>
   );
-  const [yearlyState, yearlyAction, yearlyPending] = useActionState(
-    async () => { await createCheckoutYearly(); },
-    undefined,
-  );
-  const pending = monthlyPending || yearlyPending;
+}
 
+export function PaywallModal() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <Card className="max-w-md w-full">
@@ -37,33 +45,19 @@ export function PaywallModal() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2">
-            <form action={monthlyAction}>
-              <button
-                type="submit"
-                disabled={pending}
-                className="w-full rounded-lg border border-border bg-background py-3 flex flex-col items-center transition-colors hover:bg-muted disabled:opacity-50"
-              >
+            <form action={createCheckoutMonthly}>
+              <SubmitButton className="w-full rounded-lg border border-border bg-background py-3 flex flex-col items-center transition-colors hover:bg-muted disabled:opacity-50">
                 <span className="text-lg font-bold">$9</span>
                 <span className="text-xs text-muted-foreground">/month</span>
-              </button>
+              </SubmitButton>
             </form>
-            <form action={yearlyAction}>
-              <button
-                type="submit"
-                disabled={pending}
-                className="w-full rounded-lg bg-primary py-3 flex flex-col items-center transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
+            <form action={createCheckoutYearly}>
+              <SubmitButton className="w-full rounded-lg bg-primary py-3 flex flex-col items-center transition-colors hover:bg-primary/90 disabled:opacity-50">
                 <span className="text-lg font-bold text-primary-foreground">$89</span>
                 <span className="text-xs text-primary-foreground/70">/year (save 18%)</span>
-              </button>
+              </SubmitButton>
             </form>
           </div>
-
-          {pending && (
-            <p className="text-xs text-center text-muted-foreground">
-              Redirecting to checkout...
-            </p>
-          )}
 
           <p className="text-xs text-center text-muted-foreground">
             Cancel anytime. Your logbook and flight data stay free forever.

@@ -38,12 +38,14 @@ async function getOrCreateCustomer(
   return customer.id;
 }
 
-export async function createCheckoutMonthly(): Promise<void> {
+async function createCheckout(priceId: string): Promise<string> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
+
+  if (!priceId) throw new Error("Missing Stripe price ID — check env vars");
 
   const customerId = await getOrCreateCustomer(user.id, user.email!);
   const appUrl = getAppUrl();
@@ -51,7 +53,7 @@ export async function createCheckoutMonthly(): Promise<void> {
   const session = await getStripe().checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
-    line_items: [{ price: PRICES.PILOT_MONTHLY, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${appUrl}/dashboard/costs?checkout=success`,
     cancel_url: `${appUrl}/dashboard/costs?checkout=cancel`,
     subscription_data: {
@@ -59,33 +61,18 @@ export async function createCheckoutMonthly(): Promise<void> {
     },
   });
 
-  if (!session.url) throw new Error("Failed to create checkout session");
-  redirect(session.url);
+  if (!session.url) throw new Error("Stripe returned no checkout URL");
+  return session.url;
+}
+
+export async function createCheckoutMonthly(): Promise<void> {
+  const url = await createCheckout(PRICES.PILOT_MONTHLY);
+  redirect(url);
 }
 
 export async function createCheckoutYearly(): Promise<void> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  const customerId = await getOrCreateCustomer(user.id, user.email!);
-  const appUrl = getAppUrl();
-
-  const session = await getStripe().checkout.sessions.create({
-    customer: customerId,
-    mode: "subscription",
-    line_items: [{ price: PRICES.PILOT_ANNUAL, quantity: 1 }],
-    success_url: `${appUrl}/dashboard/costs?checkout=success`,
-    cancel_url: `${appUrl}/dashboard/costs?checkout=cancel`,
-    subscription_data: {
-      metadata: { supabase_user_id: user.id },
-    },
-  });
-
-  if (!session.url) throw new Error("Failed to create checkout session");
-  redirect(session.url);
+  const url = await createCheckout(PRICES.PILOT_ANNUAL);
+  redirect(url);
 }
 
 export async function createPortalSession(): Promise<void> {
